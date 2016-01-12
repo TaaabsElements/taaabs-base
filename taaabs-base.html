@@ -1,0 +1,129 @@
+
+<dom-module id="taaabs-base">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+
+  <template>
+    <h2> Interface Base </h2>
+    <div>{{baseSel.id}}</div>
+    <div id="base-url">{{basesel.id}}</div>
+    <div id="base-label">{{basesel.label}}</div>
+  </template>
+
+  <script>
+    /* global Polymer, Samotraces */
+
+    /**
+     *`<taaabs-base>` is a graphical representation of a KTBS Base.
+     *More information about <a href="https://kernel-for-trace-based-systems.readthedocs.org/en/latest/concepts/abstract_api.html#base-base">KTBS Bases</a>.
+     *
+     *(@see) Samotraces.Ktbs.Base : Model (in the MVC pattern)
+     *
+     *(@see) Samotraces.Ui.Widgets.Ktbs.ListTracesInBases : View
+     *
+     *(@see) Samotraces.Ui.Widgets.Ktbs.ListModelInBases : View
+     *
+     *@element taaabs-ktbs
+     */
+    Polymer({
+      is: 'taaabs-base',
+      properties: {
+
+				/**
+        *Current base.
+        *
+        *@attribute base
+        *@type Object
+        * 
+        *@see Samotraces
+        */ 
+        base: {
+          type: Object,
+          observer: '_baseChanged'
+        },
+
+				/**
+        *Current base URL encoded.
+        *
+        *@attribute encodedKtbsBaseUrl
+        *@type String
+        */
+        encodedKtbsBaseUrl: {
+          type: String,
+          observer: '_encodedKtbsBaseUrlChanged'
+        },
+
+				/**
+        *Current base URL.
+        *
+        *@attribute ktbsBaseUrl
+        *@type String
+        */
+        ktbsBaseUrl: {
+          type: String,
+          observer: '_ktbsBaseUrlChanged'
+        }
+      },
+      _baseChanged: function(newBaseObj) {
+        // TODO we cannot use yet TaaabsBehaviors.LazyLoading because the behavior
+        //  handles only one widget by instance
+        this._detachWidgets();
+        this._attachWidgets();
+
+        var listTracewidget = new Samotraces.Ui.Widgets.Ktbs.ListTracesInBases(this.$$('#trace-list'), newBaseObj, '');
+        var listModelwidget = new Samotraces.Ui.Widgets.Ktbs.ListModelInBases(this.$$('#model-list'), newBaseObj, '');
+        listTracewidget.on('ListTrace', this._listTrace.bind(this));
+        listModelwidget.on('ListModel', this._listModel.bind(this));
+      },
+      _encodedKtbsBaseUrlChanged: function(encodedKtbsBaseUrl) {
+        if (!!encodedKtbsBaseUrl) {
+          var decodedKtbsBaseUrl = decodeURIComponent(encodedKtbsBaseUrl); // TODO use _decodeKtbsBaseUrl
+          this.set('ktbsBaseUrl', decodedKtbsBaseUrl);
+        }
+      },
+      _ktbsBaseUrlChanged: function(ktbsBaseUrl) {
+        this.set('base', new Samotraces.Ktbs.Base(ktbsBaseUrl));
+      },
+      _listTrace: function() {
+        var baseButton = Polymer.dom(this.root).querySelectorAll('.trace');
+        for (var i = 0; i < baseButton.length; i++) {
+          baseButton[i].onclick = this._clickTrace.bind(this);
+        }
+      },
+      _listModel: function(){
+        var baseButton = Polymer.dom(this.root).querySelectorAll('.model');
+        for (var i = 0; i < baseButton.length; i++) {
+          baseButton[i].onclick = this._clickModel.bind(this);
+        }
+      },
+      _clickTrace: function(evt) {
+        var traceURL = this.base.id + evt.target.innerHTML.replace('./', '');
+        // do navigation using page.js
+        page('/ktbs-trace/?url=' + encodeURIComponent(traceURL));
+      },
+      _clickModel: function(evt) {
+        var modelURL = this.base.id + evt.target.innerHTML.replace('./', '');
+        // do navigation using page.js
+        page('/ktbs-model/?url=' + encodeURIComponent(modelURL));
+      },
+      _attachWidgets: function() {
+        ['trace-list', 'model-list'].forEach((function(id) {
+          var element = document.createElement('div');
+          element.setAttribute('id', id);
+          Polymer.dom(this.root).appendChild(element);
+        }).bind(this));
+      },
+      _detachWidgets: function() {
+        if (this.$$('#trace-list')) {
+          Polymer.dom(this.root).removeChild(this.$$('#trace-list'));
+        }
+        if (this.$$('#model-list')) {
+          Polymer.dom(this.root).removeChild(this.$$('#model-list'));
+        }
+      }
+    });
+  </script>
+</dom-module>
